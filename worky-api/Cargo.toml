@@ -1,0 +1,12 @@
+[package]
+name = "worky-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+worky-common = { path = "../worky-common" }
+worky-runtime = { path = "../worky-runtime" }
+axum = { workspace = true }
+hyper = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true }

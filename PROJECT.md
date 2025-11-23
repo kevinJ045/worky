@@ -125,7 +125,7 @@ export default async function handler(req: any) {
 
 ### Milestone 0: Research & Prototype
 
-* [ ] Decide JS engine: `deno_core` (V8) ✅
+* [x] Decide JS engine: `deno_core` (V8) ✅
 * [ ] Prototype embedding small runtime, executing `console.log('hi')`
 * [ ] Benchmark startup and memory usage
 
