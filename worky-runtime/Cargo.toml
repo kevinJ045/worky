@@ -1,11 +1,12 @@
 [package]
 name = "worky-runtime"
-version = "0.1.0"
-edition = "2021"
+version = { workspace = true }
+edition = { workspace = true }
 
 [dependencies]
 worky-common = { path = "../worky-common" }
 worky-ops = { path = "../worky-ops" }
 deno_core = { workspace = true }
+deno_error = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }

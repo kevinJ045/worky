@@ -49,6 +49,6 @@ pub fn init_ops() -> Vec<Extension> {
     deno_url::deno_url::init(),
     deno_web::deno_web::init::<WorkyPermissions>(blob_store, Default::default()),
     deno_fetch::deno_fetch::init::<WorkyPermissions>(deno_fetch::Options::default()),
-    // deno_websocket::deno_websocket::init::<WorkyPermissions>(Default::default()),
+    deno_websocket::deno_websocket::init::<WorkyPermissions>(Default::default(), None, None),
   ]
 }

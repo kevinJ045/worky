@@ -21,22 +21,29 @@ impl IsolatePool {
 
     for _ in 0..size {
       let receiver = receiver.clone();
-      tokio::spawn(async move {
-        let mut runtime = WorkyRuntime::new();
-        loop {
-          let job = {
-            let mut rx = receiver.lock().await;
-            rx.recv().await
-          };
+      std::thread::spawn(move || {
+        let rt = tokio::runtime::Builder::new_current_thread()
+          .enable_all()
+          .build()
+          .unwrap();
 
-          match job {
-            Some(item) => {
-              let result = runtime.run(&item.code).await;
-              let _ = item.responder.send(result);
+        rt.block_on(async move {
+          let mut runtime = WorkyRuntime::new();
+          loop {
+            let job = {
+              let mut rx = receiver.lock().await;
+              rx.recv().await
+            };
+
+            match job {
+              Some(item) => {
+                let result = runtime.run(&item.code).await;
+                let _ = item.responder.send(result);
+              }
+              None => break, // Channel closed
             }
-            None => break, // Channel closed
           }
-        }
+        });
       });
     }
 
