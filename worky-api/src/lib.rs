@@ -83,10 +83,36 @@ pub fn spawn_worker(addr: String, module_path: String, name: Option<String>) -> 
 }
 
 pub async fn listen_to_addr(addr: String, handle: WorkerHandle) {
-  let socket: SocketAddr = addr.parse().unwrap();
+  let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
+  let handle = std::sync::Arc::new(handle);
 
-  // TODO: (Nonblocking) listen to the address
-  // and send it to the sender of handle and
-  // respond with what is returned in the
-  // WorkerRequest::resp
+  let app = Router::new().fallback(move |req: Request<axum::body::Body>| {
+    let handle = handle.clone();
+    async move {
+      let (tx, rx) = tokio::sync::oneshot::channel();
+
+
+
+      let req_bytes = req
+        .map(|body| {
+          use http_body_util::BodyExt;
+          let body_bytes = futures::executor::block_on(body.collect()).unwrap().to_bytes();
+          body_bytes.to_vec()
+        });
+
+      let worker_req = WorkerRequest {
+        resp: tx,
+        request_data: Some(req_bytes),
+      };
+
+      handle.sender.send(worker_req).unwrap();
+
+      let resp = rx.await.unwrap().unwrap();
+      
+      let (parts, body) = resp.into_parts();
+      Response::from_parts(parts, axum::body::Body::from(body))
+    }
+  });
+
+  axum::serve(listener, app).await.unwrap();
 }

@@ -4081,6 +4081,8 @@ dependencies = [
  "anyhow",
  "axum 0.8.7",
  "deno_core",
+ "futures",
+ "http-body-util",
  "hyper",
  "tokio",
  "worky-common",

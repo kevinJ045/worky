@@ -12,3 +12,5 @@ hyper = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }
 deno_core = { workspace = true }
+futures = { workspace = true }
+http-body-util = { workspace = true }
