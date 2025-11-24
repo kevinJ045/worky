@@ -85,36 +85,8 @@ pub fn spawn_worker(addr: String, module_path: String, name: Option<String>) -> 
 pub async fn listen_to_addr(addr: String, handle: WorkerHandle) {
   let socket: SocketAddr = addr.parse().unwrap();
 
-  let make_svc = make_service_fn(move |_| {
-    let worker = handle.sender.clone();
-
-    async move {
-      Ok::<_, hyper::Error>(service_fn(move |req: Request<Body>| {
-        let worker = worker.clone();
-
-        async move {
-          let bytes = hyper::body::to_bytes(req.into_body()).await.unwrap();
-          let input = String::from_utf8_lossy(&bytes).to_string();
-
-          // Send request to worker
-          let (tx, rx) = std::sync::mpsc::channel::<Result<String, anyhow::Error>>();
-
-          worker
-            .send(WorkerRequest {
-              data: input,
-              resp: tx,
-            })
-            .unwrap();
-
-          // Wait for worker to finish JS execution
-          let result = rx.recv().unwrap().unwrap_or_else(|e| e.to_string());
-
-          Ok::<_, hyper::Error>(Response::new(Body::from(result)))
-        }
-      }))
-    }
-  });
-
-  println!("Listening on http://{}", socket);
-  Server::bind(&socket).serve(make_svc).await.unwrap();
+  // TODO: (Nonblocking) listen to the address
+  // and send it to the sender of handle and
+  // respond with what is returned in the
+  // WorkerRequest::resp
 }
