@@ -8,6 +8,7 @@ version.workspace = true
 [dependencies]
 worky-runtime = { path = "../worky-runtime" }
 worky-common = { path = "../worky-common" }
+worky-api = { path = "../worky-api" }
 lazy_static = { workspace = true }
 once_cell = { workspace = true }
 tokio = { workspace = true }

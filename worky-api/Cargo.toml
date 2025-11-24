@@ -6,7 +6,6 @@ edition = "2021"
 [dependencies]
 worky-common = { path = "../worky-common" }
 worky-runtime = { path = "../worky-runtime" }
-worky-store = { path = "../worky-store" }
 axum = { workspace = true }
 hyper = { workspace = true }
 tokio = { workspace = true }

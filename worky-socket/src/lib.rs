@@ -85,7 +85,7 @@ fn handle_request(req: Request) -> Response {
         address, path, refresh, name
       );
 
-      // TODO: implement IntoModuleStore here
+      let _ = worky_store::register_worker(address, path, name);
 
       Response {
         status: "ok".into(),

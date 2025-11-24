@@ -4087,7 +4087,6 @@ dependencies = [
  "tokio",
  "worky-common",
  "worky-runtime",
- "worky-store",
 ]
 
 [[package]]
@@ -4106,7 +4105,9 @@ name = "worky-common"
 version = "0.0.1"
 dependencies = [
  "anyhow",
+ "hyper",
  "serde",
+ "tokio",
 ]
 
 [[package]]
@@ -4165,6 +4166,7 @@ dependencies = [
  "serde",
  "serde_json",
  "worky-common",
+ "worky-store",
 ]
 
 [[package]]
@@ -4177,6 +4179,7 @@ dependencies = [
  "lazy_static",
  "once_cell",
  "tokio",
+ "worky-api",
  "worky-common",
  "worky-runtime",
 ]

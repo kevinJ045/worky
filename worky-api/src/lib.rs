@@ -6,8 +6,8 @@ use std::net::SocketAddr;
 use std::path::Path;
 use std::sync::mpsc::channel;
 
+use worky_common::workers::{WorkerHandle, WorkerRequest};
 use worky_runtime::WorkyRuntime;
-use worky_store::{WorkerHandle, WorkerRequest};
 
 pub fn spawn_worker(addr: String, module_path: String, name: Option<String>) -> WorkerHandle {
   let (tx, rx) = channel::<WorkerRequest>();
@@ -91,14 +91,13 @@ pub async fn listen_to_addr(addr: String, handle: WorkerHandle) {
     async move {
       let (tx, rx) = tokio::sync::oneshot::channel();
 
-
-
-      let req_bytes = req
-        .map(|body| {
-          use http_body_util::BodyExt;
-          let body_bytes = futures::executor::block_on(body.collect()).unwrap().to_bytes();
-          body_bytes.to_vec()
-        });
+      let req_bytes = req.map(|body| {
+        use http_body_util::BodyExt;
+        let body_bytes = futures::executor::block_on(body.collect())
+          .unwrap()
+          .to_bytes();
+        body_bytes.to_vec()
+      });
 
       let worker_req = WorkerRequest {
         resp: tx,
@@ -108,7 +107,7 @@ pub async fn listen_to_addr(addr: String, handle: WorkerHandle) {
       handle.sender.send(worker_req).unwrap();
 
       let resp = rx.await.unwrap().unwrap();
-      
+
       let (parts, body) = resp.into_parts();
       Response::from_parts(parts, axum::body::Body::from(body))
     }
