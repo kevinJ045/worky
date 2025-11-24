@@ -50,14 +50,23 @@ mod tests {
   async fn test_run_js() {
     let mut runtime = WorkyRuntime::new();
     let result = runtime.run("console.log('Hello from JS')").await;
+    match &result {
+      Err(err) => eprintln!("{err}"),
+      _ => {}
+    }
     assert!(result.is_ok());
   }
 
   #[tokio::test]
   async fn test_run_module() {
     let mut runtime = WorkyRuntime::new();
-    let path = std::env::current_dir().unwrap().join("test_module.js");
+    let path = std::env::current_dir().unwrap().join("test/test_module.js");
+    println!("{path:?}");
     let result = runtime.run_module(&path).await;
+    match &result {
+      Err(err) => eprintln!("{err}"),
+      _ => {}
+    }
     assert!(result.is_ok());
   }
 
@@ -65,6 +74,10 @@ mod tests {
   async fn test_isolate_pool() {
     let pool = IsolatePool::new(2);
     let result = pool.run("console.log('Hello from pool')".to_string()).await;
+    match &result {
+      Err(err) => eprintln!("{err}"),
+      _ => {}
+    }
     assert!(result.is_ok());
   }
 
@@ -78,6 +91,10 @@ mod tests {
             console.log("fetch exists");
         "#;
     let result = runtime.run(code).await;
+    match &result {
+      Err(err) => eprintln!("{err}"),
+      _ => {}
+    }
     assert!(result.is_ok());
   }
 }

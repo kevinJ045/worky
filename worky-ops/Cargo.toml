@@ -11,6 +11,14 @@ deno_url = { workspace = true }
 deno_web = { workspace = true }
 deno_webidl = { workspace = true }
 deno_websocket = { workspace = true }
-deno_http = { workspace = true }
 deno_fetch = { workspace = true }
 deno_permissions = { workspace = true }
+deno_tls = { workspace = true }
+deno_net = { workspace = true }
+deno_telemetry = { workspace = true }
+deno_error = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+once_cell = { workspace = true }
