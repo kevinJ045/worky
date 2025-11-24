@@ -4,6 +4,7 @@ pub mod pool;
 pub use pool::IsolatePool;
 
 use anyhow::Result;
+use deno_core::v8;
 use deno_core::JsRuntime;
 use deno_core::ModuleSpecifier;
 use deno_core::RuntimeOptions;
@@ -12,6 +13,17 @@ use std::rc::Rc;
 
 pub struct WorkyRuntime {
   js_runtime: JsRuntime,
+}
+
+pub struct WorkerModule {
+  pub path: String,
+  pub name: Option<String>,
+}
+
+pub struct WorkerRequest {
+  pub path: String,
+  pub resp: tokio::sync::oneshot::Sender<anyhow::Result<String>>,
+  pub request_data: Option<String>,
 }
 
 impl WorkyRuntime {
@@ -31,14 +43,17 @@ impl WorkyRuntime {
     Ok(())
   }
 
-  pub async fn run_module(&mut self, file_path: &Path) -> Result<()> {
+  pub async fn run_module(&mut self, file_path: &Path) -> Result<v8::Global<v8::Object>> {
     let main_module = ModuleSpecifier::from_file_path(file_path)
       .map_err(|_| anyhow::anyhow!("Invalid file path"))?;
     let mod_id = self.js_runtime.load_main_es_module(&main_module).await?;
     let result = self.js_runtime.mod_evaluate(mod_id);
     self.js_runtime.run_event_loop(Default::default()).await?;
     result.await?;
-    Ok(())
+
+    let ns_local = self.js_runtime.get_module_namespace(mod_id)?;
+
+    Ok(ns_local)
   }
 }
 

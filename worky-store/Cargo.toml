@@ -6,3 +6,8 @@ license.workspace = true
 version.workspace = true
 
 [dependencies]
+worky-runtime = { path = "../worky-runtime" }
+lazy_static = { workspace = true }
+once_cell = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true }
