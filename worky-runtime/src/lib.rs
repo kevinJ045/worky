@@ -12,18 +12,7 @@ use std::path::Path;
 use std::rc::Rc;
 
 pub struct WorkyRuntime {
-  js_runtime: JsRuntime,
-}
-
-pub struct WorkerModule {
-  pub path: String,
-  pub name: Option<String>,
-}
-
-pub struct WorkerRequest {
-  pub path: String,
-  pub resp: tokio::sync::oneshot::Sender<anyhow::Result<String>>,
-  pub request_data: Option<String>,
+  pub js_runtime: JsRuntime,
 }
 
 impl WorkyRuntime {

@@ -4080,10 +4080,12 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum 0.8.7",
+ "deno_core",
  "hyper",
  "tokio",
  "worky-common",
  "worky-runtime",
+ "worky-store",
 ]
 
 [[package]]
@@ -4168,9 +4170,12 @@ name = "worky-store"
 version = "0.0.1"
 dependencies = [
  "anyhow",
+ "deno_core",
+ "hyper",
  "lazy_static",
  "once_cell",
  "tokio",
+ "worky-common",
  "worky-runtime",
 ]
 
