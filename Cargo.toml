@@ -1,14 +1,15 @@
 [workspace]
 members = [
-    "worky-common",
-    "worky-ops",
-    "worky-runtime",
-    "worky-api",
-    "worky-cli",
-    "worky-socket",
-    "worky-daemon",
-    "worky-extensions"
-, "worky-store"]
+  "worky-common",
+  "worky-ops",
+  "worky-runtime",
+  "worky-api",
+  "worky-cli",
+  "worky-socket",
+  "worky-daemon",
+  "worky-extensions",
+  "worky-store"
+]
 resolver = "2"
 
 [workspace.package]
