@@ -3,35 +3,51 @@ use deno_core::v8;
 use hyper::service::service_fn;
 use hyper::{Request, Response};
 use std::net::SocketAddr;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
 
 use worky_common::workers::{WorkerHandle, WorkerRequest};
 use worky_runtime::WorkyRuntime;
 
-pub fn spawn_worker(addr: String, module_path: String, name: Option<String>) -> WorkerHandle {
+pub fn spawn_worker(
+  addr: String,
+  module_path: impl Into<PathBuf>,
+  name: Option<String>,
+) -> WorkerHandle {
   let (tx, rx) = channel::<WorkerRequest>();
+  let path = module_path.into();
   std::thread::spawn(move || {
     let rt = tokio::runtime::Builder::new_current_thread()
       .enable_all()
       .build()
       .unwrap();
     let mut runtime = WorkyRuntime::new();
-    let module_future = runtime.run_module(Path::new(&module_path));
-    let module_exports = rt.block_on(module_future).unwrap();
+    let module_future = runtime.run_module(Path::new(&path));
 
     let fetch_global = {
-      let scope = &mut runtime.js_runtime.handle_scope();
-      let ns_local = module_exports.open(scope);
+      let module_exports = rt.block_on(module_future);
+      if let Ok(module_exports) = module_exports {
+        let scope = &mut runtime.js_runtime.handle_scope();
+        let ns_local = module_exports.open(scope);
 
-      let key = v8::String::new(scope, "fetch").unwrap();
-      let val = ns_local.get(scope, key.into()).unwrap();
+        let default_key = v8::String::new(scope, "default").unwrap();
+        let default_val = ns_local.get(scope, default_key.into()).unwrap();
 
-      if !val.is_function() {
-        None
+        let default_obj =
+          v8::Local::<v8::Object>::try_from(default_val).expect("default export must be an object");
+
+        let fetch_key = v8::String::new(scope, "fetch").unwrap();
+        let fetch_val = default_obj.get(scope, fetch_key.into()).unwrap();
+
+        if !fetch_val.is_function() {
+          None
+        } else {
+          let func = v8::Local::<v8::Function>::try_from(fetch_val).unwrap();
+          Some(v8::Global::new(scope, func))
+        }
       } else {
-        let func = v8::Local::<v8::Function>::try_from(val).unwrap();
-        Some(v8::Global::new(scope, func))
+        eprintln!("Error: {}", module_exports.err().unwrap());
+        None
       }
     };
 
