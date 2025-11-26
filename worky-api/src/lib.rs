@@ -279,7 +279,7 @@ pub fn spawn_worker(
   }
 }
 
-pub async fn listen_to_addr(addr: String, handle: WorkerHandle) {
+pub async fn listen_to_addr(addr: String, handle: std::sync::Arc<WorkerHandle>) {
   let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
   let handle = std::sync::Arc::new(handle);
 

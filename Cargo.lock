@@ -4095,9 +4095,13 @@ version = "0.0.1"
 dependencies = [
  "anyhow",
  "clap",
+ "interprocess",
+ "serde_json",
  "tokio",
  "worky-api",
+ "worky-common",
  "worky-runtime",
+ "worky-socket",
 ]
 
 [[package]]
@@ -4163,8 +4167,10 @@ version = "0.0.1"
 dependencies = [
  "anyhow",
  "interprocess",
+ "lazy_static",
  "serde",
  "serde_json",
+ "tokio",
  "worky-common",
  "worky-store",
 ]

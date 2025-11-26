@@ -6,6 +6,10 @@ edition = { workspace = true }
 [dependencies]
 worky-api = { path = "../worky-api" }
 worky-runtime = { path = "../worky-runtime" }
+worky-socket = { path = "../worky-socket" }
+worky-common = { path = "../worky-common" }
 clap = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }
+interprocess = { workspace = true }
+serde_json = { workspace = true }

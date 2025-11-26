@@ -14,6 +14,9 @@ pub enum Request {
     #[serde(default)]
     name: Option<String>,
   },
+  Unload {
+    address: String,
+  },
 }
 
 #[derive(Serialize, Deserialize, Debug)]

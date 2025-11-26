@@ -1,5 +1,5 @@
 use clap::Parser;
-use worky_api::{listen_to_addr, spawn_worker};
+use worky_socket::{keepalive, protocol::Request as SocRequest, send_request};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -10,26 +10,49 @@ struct Args {
 
 #[derive(clap::Subcommand, Debug)]
 enum Commands {
+  Daemon,
+  Load {
+    #[arg(short, long)]
+    address: String,
+    #[arg(short, long)]
+    path: String,
+    #[arg(short, long)]
+    name: Option<String>,
+  },
+  Unload {
+    #[arg(short, long)]
+    address: String,
+  },
   Dev,
   Build,
 }
 
 #[tokio::main]
 async fn main() {
-  println!("Worky listening");
-  let path = std::env::current_dir()
-    .unwrap()
-    .join("worky-api/test/hello.js");
-  let handle = spawn_worker(
-    "localhost:3000".to_string(),
-    path,
-    Some("worker".to_string()),
-  );
-  listen_to_addr("localhost:3000".to_string(), handle).await;
-
   let args = Args::parse();
 
   match args.cmd {
+    Some(Commands::Daemon) => {
+      if let Err(e) = worky_socket::run() {
+        eprintln!("Daemon error: {}", e);
+      }
+      keepalive().await;
+    }
+    Some(Commands::Load {
+      address,
+      path,
+      name,
+    }) => {
+      send_request(SocRequest::Load {
+        address,
+        path,
+        refresh: None,
+        name,
+      });
+    }
+    Some(Commands::Unload { address }) => {
+      send_request(SocRequest::Unload { address });
+    }
     Some(Commands::Dev) => println!("Dev command"),
     Some(Commands::Build) => println!("Build command"),
     None => println!("No command"),

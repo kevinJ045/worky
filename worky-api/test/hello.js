@@ -1,6 +1,8 @@
 export default {
   fetch: (req) => {
     console.log(req);
-    return "Hello from JS";
+    return new Response({
+      body: new ArrayBuffer("Hello from JS"),
+    });
   },
 };
