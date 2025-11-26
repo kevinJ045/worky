@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "action", rename_all = "lowercase")]
@@ -8,7 +9,7 @@ pub enum Request {
   Restart {},
   Load {
     address: String,
-    path: String,
+    path: PathBuf,
     #[serde(default)]
     refresh: Option<bool>,
     #[serde(default)]

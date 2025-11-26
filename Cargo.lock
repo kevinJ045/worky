@@ -4081,6 +4081,9 @@ dependencies = [
  "anyhow",
  "axum 0.8.7",
  "deno_core",
+ "deno_net",
+ "deno_web",
+ "deno_webidl",
  "futures",
  "http-body-util",
  "hyper",
@@ -4109,6 +4112,8 @@ name = "worky-common"
 version = "0.0.1"
 dependencies = [
  "anyhow",
+ "deno_core",
+ "futures",
  "hyper",
  "serde",
  "tokio",

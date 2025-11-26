@@ -1,5 +1,6 @@
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tokio::task::JoinHandle;
 use worky_api::{listen_to_addr, spawn_worker};
@@ -11,19 +12,13 @@ lazy_static::lazy_static! {
   pub static ref LISTENER_HANDLES: Mutex<HashMap<String, JoinHandle<()>>> = Mutex::new(HashMap::new());
 }
 
-pub async fn register_worker(addr: String, path: String, name: Option<String>) {
-  println!("Worker registered {addr} from {path} as  {name:?}!!");
+pub async fn register_worker(addr: String, path: PathBuf, name: Option<String>) {
+  println!("Worker registered {addr} from {path:?} as  {name:?}!!");
   let handle = spawn_worker(addr.clone(), path, name);
   let handle = Arc::new(handle);
   WORKERS.lock().unwrap().insert(addr.clone(), handle.clone());
 
-  LISTENER_HANDLES.lock().unwrap().insert(
-    addr.clone(),
-    tokio::spawn(async move {
-      println!("Listening!!");
-      listen_to_addr(addr, handle).await;
-    }),
-  );
+  listen_to_addr(addr, handle).await;
 }
 
 pub fn unregister_worker(addr: String) -> bool {

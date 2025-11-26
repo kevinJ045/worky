@@ -87,7 +87,7 @@ async fn handle_request(req: Request) -> Response {
       println!(
         "LOAD request:
     address: {}
-    path: {}
+    path: {:?}
     refresh: {:?}
     name: {:?}",
         address, path, refresh, name
@@ -168,6 +168,8 @@ pub fn send_request(req: Request) {
 }
 
 pub async fn keepalive() {
+  tokio::task::yield_now().await;
+
   let handles = std::mem::take(&mut *TOK_ASYNC_HANDLES.lock().unwrap());
   for handle in handles {
     let _ = handle.await;

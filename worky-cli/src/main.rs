@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::Parser;
 use worky_socket::{keepalive, protocol::Request as SocRequest, send_request};
 
@@ -15,7 +17,7 @@ enum Commands {
     #[arg(short, long)]
     address: String,
     #[arg(short, long)]
-    path: String,
+    path: PathBuf,
     #[arg(short, long)]
     name: Option<String>,
   },
@@ -36,6 +38,14 @@ async fn main() {
       if let Err(e) = worky_socket::run() {
         eprintln!("Daemon error: {}", e);
       }
+      send_request(SocRequest::Load {
+        address: "localhost:3000".to_string(),
+        path: std::env::current_dir()
+          .unwrap()
+          .join("worky-api/test/hello.js"),
+        refresh: None,
+        name: Some("worker1".to_string()),
+      });
       keepalive().await;
     }
     Some(Commands::Load {
