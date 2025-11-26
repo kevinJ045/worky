@@ -1,10 +1,10 @@
 use deno_core::Extension;
 
 pub mod ext;
-mod polyfill;
+pub use ext::worky::WorkyInitOptions;
 
-pub fn init_ops() -> Vec<Extension> {
-  let mut extensions = vec![polyfill::polyfill_extension::init()];
+pub fn init_ops(opts: WorkyInitOptions) -> Vec<Extension> {
+  let mut extensions = vec![ext::worky::worky_js::init(opts)];
 
   extensions.extend(ext::webidl::extensions(false));
   extensions.extend(ext::console::extensions(false));

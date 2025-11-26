@@ -192,12 +192,13 @@ pub fn spawn_worker(
   let (tx, rx) = channel::<WorkerRequest>();
   let path = module_path.into();
   let addr_r = addr.clone();
+  let name_r = name.clone();
   std::thread::spawn(move || {
     let rt = tokio::runtime::Builder::new_current_thread()
       .enable_all()
       .build()
       .unwrap();
-    let mut runtime = WorkyRuntime::new();
+    let mut runtime = WorkyRuntime::new(Some(addr_r.clone()), name_r);
     let module_future = runtime.run_module(Path::new(&path));
 
     let fetch_global = {
@@ -411,7 +412,7 @@ mod tests {
 
   #[tokio::test]
   async fn test_parse_readable_stream() {
-    let mut runtime = WorkyRuntime::new();
+    let mut runtime = WorkyRuntime::new(None, None);
     let code = r#"
       const stream = new ReadableStream({
         start(controller) {

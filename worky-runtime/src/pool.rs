@@ -28,7 +28,7 @@ impl IsolatePool {
           .unwrap();
 
         rt.block_on(async move {
-          let mut runtime = WorkyRuntime::new();
+          let mut runtime = WorkyRuntime::new(None, None);
           loop {
             let job = {
               let mut rx = receiver.lock().await;

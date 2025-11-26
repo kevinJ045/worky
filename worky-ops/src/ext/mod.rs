@@ -25,3 +25,4 @@ pub mod telemetry;
 pub mod url;
 pub mod web;
 pub mod webidl;
+pub mod worky;

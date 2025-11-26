@@ -17,11 +17,28 @@ pub struct WorkyRuntime {
 }
 
 impl WorkyRuntime {
-  pub fn new() -> Self {
+  pub fn new(addr: Option<String>, name: Option<String>) -> Self {
     let loader = Rc::new(loader::FsModuleLoader);
     let mut options = RuntimeOptions::default();
     options.module_loader = Some(loader);
-    options.extensions = worky_ops::init_ops();
+    options.extensions = worky_ops::init_ops(if addr.is_some() && name.is_some() {
+      worky_ops::WorkyInitOptions {
+        worker_address: addr.unwrap(),
+        worker_name: name.unwrap(),
+      }
+    } else if addr.is_some() {
+      worky_ops::WorkyInitOptions {
+        worker_address: addr.unwrap(),
+        ..Default::default()
+      }
+    } else if name.is_some() {
+      worky_ops::WorkyInitOptions {
+        worker_name: name.unwrap(),
+        ..Default::default()
+      }
+    } else {
+      worky_ops::WorkyInitOptions::default()
+    });
 
     let js_runtime = JsRuntime::new(options);
     Self { js_runtime }
@@ -53,7 +70,7 @@ mod tests {
 
   #[tokio::test]
   async fn test_run_js() {
-    let mut runtime = WorkyRuntime::new();
+    let mut runtime = WorkyRuntime::new(None, None);
     let result = runtime.run("console.log('Hello from JS')").await;
     match &result {
       Err(err) => eprintln!("{err}"),
@@ -64,7 +81,7 @@ mod tests {
 
   #[tokio::test]
   async fn test_run_module() {
-    let mut runtime = WorkyRuntime::new();
+    let mut runtime = WorkyRuntime::new(None, None);
     let path = std::env::current_dir().unwrap().join("test/test_module.js");
     println!("{path:?}");
     let result = runtime.run_module(&path).await;
@@ -88,7 +105,7 @@ mod tests {
 
   #[tokio::test]
   async fn test_fetch() {
-    let mut runtime = WorkyRuntime::new();
+    let mut runtime = WorkyRuntime::new(None, None);
     // We can't easily test real fetch without internet or a local server.
     // But we can check if the symbol exists.
     let code = r#"
