@@ -8,11 +8,7 @@ import * as eventSource from "ext:deno_fetch/27_eventsource.js";
 
 Deno.core.setWasmStreamingCallback(fetch.handleWasmStreaming);
 
-import {
-  applyToGlobal,
-  writeable,
-  nonEnumerable,
-} from "ext:polyfill_extension/init_utils.js";
+import { applyToGlobal, writeable, nonEnumerable } from "ext:worky_js/utils.js";
 
 applyToGlobal({
   fetch: writeable(fetch.fetch),

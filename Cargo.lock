@@ -4279,6 +4279,7 @@ name = "worky-common"
 version = "0.0.1"
 dependencies = [
  "anyhow",
+ "axum 0.8.7",
  "deno_core",
  "futures",
  "hyper",

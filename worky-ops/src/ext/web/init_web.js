@@ -39,11 +39,7 @@ globalThis.Deno.refTimer = timers.refTimer;
 globalThis.Deno.unrefTimer = timers.unrefTimer;
 globalThis.Deno.fetch = fetch;
 
-import {
-  applyToGlobal,
-  nonEnumerable,
-  writeable,
-} from "ext:polyfill_extension/init_utils.js";
+import { applyToGlobal, nonEnumerable, writeable } from "ext:worky_js/utils.js";
 
 applyToGlobal({
   AbortController: nonEnumerable(abortSignal.AbortController),

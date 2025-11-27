@@ -10,3 +10,4 @@ tokio = { workspace = true }
 hyper = { workspace = true }
 deno_core = { workspace = true }
 futures = { workspace = true }
+axum = { workspace = true }

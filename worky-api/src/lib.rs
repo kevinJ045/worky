@@ -1,17 +1,21 @@
 use axum::Router;
 use deno_core::v8;
-use hyper::{Request, Response};
+use hyper::Request;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
+use futures::SinkExt;
 
 use deno_core::JsRuntime;
 use worky_common::workers::{WorkerHandle, WorkerRequest};
 use worky_runtime::WorkyRuntime;
 
-pub async fn parse_js_response(
-  runtime: &mut JsRuntime,
+pub async fn parse_js_response<'a>(
+  runtime: &'a mut JsRuntime,
   res_val: v8::Global<v8::Value>,
-) -> anyhow::Result<hyper::Response<hyper::body::Bytes>> {
+) -> anyhow::Result<(
+  hyper::Response<axum::body::Body>,
+  Option<std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'a>>>,
+)> {
   let (status, headers, body_val_global) = {
     let scope = &mut runtime.handle_scope();
     let res_val = v8::Local::new(scope, res_val);
@@ -133,55 +137,74 @@ pub async fn parse_js_response(
     };
 
     match body_state {
-      BodyState::Done(bytes) => bytes,
+      BodyState::Done(bytes) => (
+        builder.body(axum::body::Body::from(bytes)).unwrap(),
+        None,
+      ),
       BodyState::Error(e) => return Err(e),
       BodyState::Stream(reader_global) => {
-        let read_key_str = "read";
-        let mut chunks = Vec::new();
+        let (mut tx, rx) = futures::channel::mpsc::channel::<Result<axum::body::Bytes, anyhow::Error>>(10);
+        let body = axum::body::Body::from_stream(rx);
 
-        loop {
-          let promise_global = {
-            let scope = &mut runtime.handle_scope();
-            let read_key = v8::String::new(scope, read_key_str).unwrap();
-            let reader = v8::Local::new(scope, reader_global.clone());
-            let read_fn: v8::Local<v8::Function> = reader
-              .get(scope, read_key.into())
-              .unwrap()
-              .try_into()
-              .unwrap();
-            let promise_val = read_fn.call(scope, reader.into(), &[]).unwrap();
-            let promise: v8::Local<v8::Promise> = promise_val.try_into().unwrap();
-            let promise_value: v8::Local<v8::Value> = promise.into();
-            v8::Global::new(scope, promise_value)
-          };
+        let pumper: std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'a>> = Box::pin(async move {
+            let read_key_str = "read";
 
-          #[allow(deprecated)]
-          let result_global = runtime.resolve_value(promise_global).await?;
+            loop {
+              let promise_global = {
+                let scope = &mut runtime.handle_scope();
+                let read_key = v8::String::new(scope, read_key_str).unwrap();
+                let reader = v8::Local::new(scope, reader_global.clone());
+                let read_fn: v8::Local<v8::Function> = reader
+                  .get(scope, read_key.into())
+                  .unwrap()
+                  .try_into()
+                  .unwrap();
+                let promise_val = read_fn.call(scope, reader.into(), &[]).unwrap();
+                let promise: v8::Local<v8::Promise> = promise_val.try_into().unwrap();
+                let promise_value: v8::Local<v8::Value> = promise.into();
+                v8::Global::new(scope, promise_value)
+              };
 
-          let scope = &mut runtime.handle_scope();
-          let result: v8::Local<v8::Value> = v8::Local::new(scope, result_global);
-          let result_obj = result.to_object(scope).unwrap();
+              #[allow(deprecated)]
+              let result_global_res = runtime.resolve_value(promise_global).await;
+              
+              let result_global = match result_global_res {
+                  Ok(r) => r,
+                  Err(e) => {
+                      let _ = tx.send(Err(e.into())).await;
+                      break;
+                  }
+              };
 
-          let done_key = v8::String::new(scope, "done").unwrap();
-          let done = result_obj.get(scope, done_key.into()).unwrap();
-          if done.is_true() {
-            break;
-          }
+              let scope = &mut runtime.handle_scope();
+              let result: v8::Local<v8::Value> = v8::Local::new(scope, result_global);
+              let result_obj = result.to_object(scope).unwrap();
 
-          let value_key = v8::String::new(scope, "value").unwrap();
-          let value = result_obj.get(scope, value_key.into()).unwrap();
-          let uint8: v8::Local<v8::Uint8Array> = value.try_into().unwrap();
-          let len = uint8.byte_length();
-          let mut buf = vec![0u8; len];
-          uint8.copy_contents(&mut buf);
-          chunks.extend_from_slice(&buf);
-        }
-        chunks
+              let done_key = v8::String::new(scope, "done").unwrap();
+              let done = result_obj.get(scope, done_key.into()).unwrap();
+              if done.is_true() {
+                break;
+              }
+
+              let value_key = v8::String::new(scope, "value").unwrap();
+              let value = result_obj.get(scope, value_key.into()).unwrap();
+              let uint8: v8::Local<v8::Uint8Array> = value.try_into().unwrap();
+              let len = uint8.byte_length();
+              let mut buf = vec![0u8; len];
+              uint8.copy_contents(&mut buf);
+              
+              if tx.send(Ok(axum::body::Bytes::from(buf))).await.is_err() {
+                  break;
+              }
+            }
+        });
+        
+        (builder.body(body).unwrap(), Some(pumper))
       }
     }
   };
 
-  Ok(builder.body(body_bytes.into()).unwrap())
+  Ok(body_bytes)
 }
 
 pub fn spawn_worker(
@@ -351,15 +374,26 @@ pub fn spawn_worker(
               res_global
             };
 
-            parse_js_response(&mut runtime.js_runtime, final_res).await
+            let (res, pumper) = parse_js_response(&mut runtime.js_runtime, final_res).await?;
+            Ok((res, pumper))
           }
           Err(e) => Err(e),
         }
       };
 
       let result = rt.block_on(fut);
-
-      let _ = req.resp.send(result);
+      
+      match result {
+          Ok((res, pumper)) => {
+              let _ = req.resp.send(Ok(res));
+              if let Some(pumper) = pumper {
+                  rt.block_on(pumper);
+              }
+          }
+          Err(e) => {
+              let _ = req.resp.send(Err(e));
+          }
+      }
     }
   });
 
@@ -395,9 +429,7 @@ pub async fn listen_to_addr(addr: String, handle: std::sync::Arc<WorkerHandle>) 
       handle.sender.send(worker_req).unwrap();
 
       let resp = rx.await.unwrap().unwrap();
-
-      let (parts, body) = resp.into_parts();
-      Response::from_parts(parts, axum::body::Body::from(body))
+      resp
     }
   });
 
@@ -432,10 +464,23 @@ mod tests {
       v8::Global::new(scope, result)
     };
 
-    let response = parse_js_response(&mut runtime.js_runtime, res_global)
+    let (response, pumper) = parse_js_response(&mut runtime.js_runtime, res_global)
       .await
       .unwrap();
-    let body = response.body();
-    assert_eq!(body.as_ref(), b"Hello World");
+    
+    if let Some(pumper) = pumper {
+        // We need to drive the pumper while reading the body
+        let body = response.into_body();
+        use http_body_util::BodyExt;
+        
+        let (body_res, _) = tokio::join!(
+            body.collect(),
+            pumper
+        );
+        let body_bytes = body_res.unwrap().to_bytes();
+        assert_eq!(body_bytes.as_ref(), b"Hello World");
+    } else {
+        panic!("Expected stream");
+    }
   }
 }

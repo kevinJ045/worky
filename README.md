@@ -1,4 +1,4 @@
-# Workers-Like Serverless Runtime in Rust (deno_core)
+# Worky: Workers-Like Serverless Runtime in Rust (deno_core)
 
 This document outlines the design, architecture, and roadmap for building a Workers-like serverless runtime in Rust using `deno_core`. It includes all major components, goals, and a detailed TODO list.
 
@@ -90,11 +90,20 @@ HTTP(S) ──> Router ─┬─> Worker Isolate 1 (JS/TS)
 ## Developer API (JS/TS)
 
 ```ts
-export default async function handler(req: any) {
-  const res = await fetch("https://api.example.com/data");
-  const json = await res.json();
-  await KV.put("last", JSON.stringify({ ts: Date.now() }));
-  return { ok: true, data: json };
+export default {
+  fetch: function(req: Request){
+    const res = await fetch("https://api.example.com/data");
+    const json = await res.json();
+    await KV.put("last", JSON.stringify({ ts: Date.now() }));
+    return new Response(
+      JSON.stringify({ ok: true, data: json }),
+      {
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
+    );
+  }
 }
 ```
 
@@ -126,22 +135,21 @@ export default async function handler(req: any) {
 ### Milestone 0: Research & Prototype
 
 * [x] Decide JS engine: `deno_core` (V8) ✅
-* [ ] Prototype embedding small runtime, executing `console.log('hi')`
+* [x] Prototype embedding small runtime, executing `console.log('hi')`
 * [ ] Benchmark startup and memory usage
 
 ### Milestone 1: Basic HTTP Handler
 
-* [ ] Setup axum/hyper HTTP server
-* [ ] Accept `/api/:module` route
-* [ ] Load JS/TS file from `handlers/` folder
-* [ ] Execute JS module default export
-* [ ] Return JSON response
-* [ ] Add simple logging
+* [x] Setup axum/hyper HTTP server
+* [x] Load JS/TS files
+* [x] Execute JS module default export
+* [x] Return JSON response
+* [x] Add simple logging
 
 ### Milestone 2: Host Ops
 
-* [ ] Implement `fetch` host op
-* [ ] Implement `console.log` op
+* [x] Implement `fetch` host op
+* [x] Implement `console.log` op
 * [ ] Implement basic KV op with sled
 * [ ] Make host ops async compatible
 
