@@ -5,7 +5,7 @@ use std::sync::Arc;
 mod options;
 pub use options::WebOptions;
 
-mod permissions;
+pub mod permissions;
 pub(crate) use permissions::PermissionsContainer;
 pub use permissions::{
   AllowlistWebPermissions, DefaultWebPermissions, SystemsPermissionKind, WebPermissions,

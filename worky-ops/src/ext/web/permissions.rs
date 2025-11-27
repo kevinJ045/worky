@@ -605,6 +605,138 @@ impl_sys_permission_kinds!(
   Inspector("inspector"),
 );
 
+#[derive(Debug, Clone, Copy, Default)]
+pub struct RestrictedWebPermissions;
+
+impl RestrictedWebPermissions {
+  fn is_blocked(&self, host: &str) -> bool {
+    if host == "localhost" {
+      return true;
+    }
+    if let Ok(ip) = host.parse::<std::net::IpAddr>() {
+      if ip.is_loopback() || ip.is_unspecified() {
+        return true;
+      }
+      match ip {
+        std::net::IpAddr::V4(ipv4) => ipv4.is_private() || ipv4.is_link_local(),
+        std::net::IpAddr::V6(ipv6) => {
+          (ipv6.segments()[0] & 0xfe00) == 0xfc00 || ipv6.is_unicast_link_local()
+        }
+      }
+    } else {
+      false
+    }
+  }
+}
+
+impl WebPermissions for RestrictedWebPermissions {
+  fn allow_hrtime(&self) -> bool {
+    false
+  }
+
+  fn check_url(
+    &self,
+    url: &deno_core::url::Url,
+    api_name: &str,
+  ) -> Result<(), DenoPermissionDeniedError> {
+    if let Some(host) = url.host_str() {
+      if self.is_blocked(host) {
+        return oops(format!("Access to {} is blocked", host));
+      }
+    }
+    Ok(())
+  }
+
+  fn check_open<'a>(
+    &self,
+    resolved: bool,
+    read: bool,
+    write: bool,
+    path: &'a Path,
+    api_name: &str,
+  ) -> Option<std::borrow::Cow<'a, Path>> {
+    None
+  }
+
+  fn check_read<'a>(
+    &self,
+    p: &'a Path,
+    api_name: Option<&str>,
+  ) -> Result<Cow<'a, Path>, DenoPermissionDeniedError> {
+    oops(p.display())
+  }
+
+  fn check_read_all(&self, api_name: Option<&str>) -> Result<(), DenoPermissionDeniedError> {
+    oops("read_all")
+  }
+
+  fn check_read_blind(
+    &self,
+    p: &Path,
+    display: &str,
+    api_name: &str,
+  ) -> Result<(), DenoPermissionDeniedError> {
+    oops("read_blind")
+  }
+
+  fn check_write<'a>(
+    &self,
+    p: &'a Path,
+    api_name: Option<&str>,
+  ) -> Result<Cow<'a, Path>, DenoPermissionDeniedError> {
+    oops(p.display())
+  }
+
+  fn check_write_all(&self, api_name: &str) -> Result<(), DenoPermissionDeniedError> {
+    oops("write_all")
+  }
+
+  fn check_write_blind(
+    &self,
+    p: &Path,
+    display: &str,
+    api_name: &str,
+  ) -> Result<(), DenoPermissionDeniedError> {
+    oops("write_blind")
+  }
+
+  fn check_write_partial(
+    &self,
+    path: &str,
+    api_name: &str,
+  ) -> Result<std::path::PathBuf, DenoPermissionDeniedError> {
+    oops("write_partial").map(|_: ()| PathBuf::from(path))
+  }
+
+  fn check_host(
+    &self,
+    host: &str,
+    port: Option<u16>,
+    api_name: &str,
+  ) -> Result<(), DenoPermissionDeniedError> {
+    if self.is_blocked(host) {
+      return oops(format!("Access to {} is blocked", host));
+    }
+    Ok(())
+  }
+
+  fn check_sys(
+    &self,
+    kind: SystemsPermissionKind,
+    api_name: &str,
+  ) -> Result<(), DenoPermissionDeniedError> {
+    oops(kind.as_str())
+  }
+
+  fn check_env(&self, var: &str) -> Result<(), DenoPermissionDeniedError> {
+    oops(var)
+  }
+
+  fn check_exec(&self) -> Result<(), DenoPermissionDeniedError> {
+    oops("exec")
+  }
+}
+
 #[derive(Clone, Debug)]
 pub struct PermissionsContainer(pub Arc<dyn WebPermissions>);
 impl deno_web::TimersPermission for PermissionsContainer {

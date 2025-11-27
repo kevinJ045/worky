@@ -26,3 +26,5 @@ pub mod url;
 pub mod web;
 pub mod webidl;
 pub mod worky;
+pub mod kv;
+pub mod secrets;

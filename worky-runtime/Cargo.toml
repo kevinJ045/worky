@@ -10,3 +10,4 @@ deno_core = { workspace = true }
 deno_error = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }
+sled = { workspace = true }

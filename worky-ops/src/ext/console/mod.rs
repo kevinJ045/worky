@@ -3,7 +3,6 @@ use std::sync::Mutex;
 use super::{worky::WorkerState, ExtensionTrait};
 use deno_core::{extension, op2, Extension, OpState};
 use once_cell::sync::Lazy;
-use tracing::{error, info};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LogType {

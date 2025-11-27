@@ -150,8 +150,11 @@ export default {
 
 * [x] Implement `fetch` host op
 * [x] Implement `console.log` op
-* [ ] Implement basic KV op with sled
-* [ ] Make host ops async compatible
+* [x] Implement persistent KV op with sled
+* [x] Implement secrets environment
+* [x] Make host ops async compatible
+* [x] Isolate worker `localhost` and/or host address access
+* [ ] Make a config for db settings and alike called `worky.toml`
 
 ### Milestone 3: TypeScript Support
 

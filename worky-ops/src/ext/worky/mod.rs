@@ -1,10 +1,12 @@
 use super::ExtensionTrait;
 use deno_core::{extension, op2, Extension, OpState};
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct WorkyInitOptions {
   pub worker_name: String,
   pub worker_address: String,
+  pub kv_db: Option<sled::Db>,
+  pub secrets: std::collections::HashMap<String, String>,
 }
 
 pub struct WorkerState {
